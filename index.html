@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connie Coder's Weather Academy</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@400;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .font-code {
+            font-family: 'Fira Code', monospace;
+        }
+        
+        /* Weather background themes */
+        .theme-sunny {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+        }
+        .theme-cloudy {
+            background: linear-gradient(135deg, #475569 0%, #1e293b 100%);
+        }
+        .theme-rainy {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+        }
+        .theme-stormy {
+            background: linear-gradient(135deg, #0f172a 0%, #020617 100%);
+        }
+        .theme-snowy {
+            background: linear-gradient(135deg, #64748b 0%, #334155 100%);
+        }
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body id="appBody" class="theme-sunny min-h-screen text-white relative overflow-x-hidden flex flex-col">
+
+    <!-- Canvas for Weather Particles (Rain, Snow, Sunbeams) -->
+    <canvas id="weatherCanvas"></canvas>
+
+    <!-- Header Navigation -->
+    <header class="relative z-10 p-4 md:p-6 flex flex-col sm:flex-row justify-between items-center border-b border-white/10 gap-4">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-400 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/30">
+                <i class="fa-solid fa-code text-xl text-white"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-lg tracking-wide">Connie Coder's Weather Academy</h1>
+                <p class="text-xs text-cyan-300 font-code">Interactive Coding & Environment Lab</p>
+            </div>
+        </div>
+        <div class="flex items-center space-x-2 bg-slate-900/80 px-4 py-2 rounded-full border border-slate-700 text-sm">
+            <i class="fa-solid fa-location-dot text-cyan-400"></i>
+            <span id="locationLabel">Newcastle, KZN</span>
+            <span class="text-slate-500">|</span>
+            <span id="currentTime" class="font-code text-cyan-200"></span>
+        </div>
+    </header>
+
+    <!-- Main Content Grid -->
+    <main class="relative z-10 flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        
+        <!-- Left Panel: Weather Controls & Stats -->
+        <div class="space-y-6 lg:col-span-1">
+            <!-- Weather Selector -->
+            <div class="glass-panel rounded-2xl p-6 shadow-xl">
+                <h2 class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-cloud-sun text-yellow-400"></i> Select Climate Mode
+                </h2>
+                <div class="grid grid-cols-2 gap-3" id="weatherButtons">
+                    <button onclick="setWeather('sunny')" data-weather="sunny" class="weather-btn flex items-center gap-3 p-3 rounded-xl border border-yellow-500/40 bg-yellow-500/10 hover:bg-yellow-500/20 transition-all font-medium text-sm">
+                        <i class="fa-solid fa-sun text-yellow-400 text-lg"></i> Sunny
+                    </button>
+                    <button onclick="setWeather('cloudy')" data-weather="cloudy" class="weather-btn flex items-center gap-3 p-3 rounded-xl border border-slate-500/40 bg-slate-500/10 hover:bg-slate-500/20 transition-all font-medium text-sm">
+                        <i class="fa-solid fa-cloud text-slate-300 text-lg"></i> Cloudy
+                    </button>
+                    <button onclick="setWeather('rainy')" data-weather="rainy" class="weather-btn flex items-center gap-3 p-3 rounded-xl border border-blue-500/40 bg-blue-500/10 hover:bg-blue-500/20 transition-all font-medium text-sm">
+                        <i class="fa-solid fa-cloud-rain text-blue-400 text-lg"></i> Rainy
+                    </button>
+                    <button onclick="setWeather('stormy')" data-weather="stormy" class="weather-btn flex items-center gap-3 p-3 rounded-xl border border-purple-500/40 bg-purple-500/10 hover:bg-purple-500/20 transition-all font-medium text-sm">
+                        <i class="fa-solid fa-cloud-bolt text-purple-400 text-lg"></i> Stormy
+                    </button>
+                    <button onclick="setWeather('snowy')" data-weather="snowy" class="weather-btn col-span-2 flex items-center justify-center gap-3 p-3 rounded-xl border border-cyan-500/40 bg-cyan-500/10 hover:bg-cyan-500/20 transition-all font-medium text-sm">
+                        <i class="fa-solid fa-snowflake text-cyan-300 text-lg"></i> Snowy
+                    </button>
+                </div>
+            </div>
+
+            <!-- Live Stats Card -->
+            <div class="glass-panel rounded-2xl p-6 shadow-xl space-y-4">
+                <h2 class="text-sm font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                    <i class="fa-solid fa-gauge-high text-cyan-400"></i> Environmental Sensors
+                </h2>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-800">
+                        <p class="text-xs text-slate-400">Temperature</p>
+                        <p id="statTemp" class="text-2xl font-bold font-code mt-1 text-cyan-300">24°C</p>
+                    </div>
+                    <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-800">
+                        <p class="text-xs text-slate-400">Humidity</p>
+                        <p id="statHumidity" class="text-2xl font-bold font-code mt-1 text-blue-300">45%</p>
+                    </div>
+                    <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-800">
+                        <p class="text-xs text-slate-400">Wind Speed</p>
+                        <p id="statWind" class="text-2xl font-bold font-code mt-1 text-emerald-300">12 km/h</p>
+                    </div>
+                    <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-800">
+                        <p class="text-xs text-slate-400">System Load</p>
+                        <p id="statSystemLoad" class="text-2xl font-bold font-code mt-1 text-purple-300">18%</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Panel: Interactive Code Studio & Terminal -->
+        <div class="space-y-6 lg:col-span-2">
+            <!-- Code Editor Window -->
+            <div class="glass-panel rounded-2xl overflow-hidden shadow-xl border border-slate-700">
+                <div class="bg-slate-900/90 px-4 py-3 border-b border-slate-700 flex justify-between items-center">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                        <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+                        <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                        <span class="ml-3 text-xs text-slate-400 font-code">connie_weather_controller.js</span>
+                    </div>
+                    <span class="text-xs px-2.5 py-1 rounded-md bg-cyan-500/20 text-cyan-300 font-code border border-cyan-500/30">JavaScript</span>
+                </div>
+                <div class="p-4 bg-slate-950/60 overflow-x-auto">
+                    <pre class="font-code text-xs md:text-sm text-slate-200 leading-relaxed"><code id="codeSnippet">// Connie Coder Weather Script
+const climate = {
+  location: "Newcastle, KZN",
+  mode: "sunny",
+  temp: 24,
+  action: () => console.log("Initializing solar modules...")
+};</code></pre>
+                </div>
+            </div>
+
+            <!-- Terminal Output Window -->
+            <div class="glass-panel rounded-2xl overflow-hidden shadow-xl border border-slate-700">
+                <div class="bg-slate-900/90 px-4 py-3 border-b border-slate-700 flex justify-between items-center">
+                    <span class="text-xs text-slate-400 font-code flex items-center gap-2">
+                        <i class="fa-solid fa-terminal text-emerald-400"></i> Terminal Output
+                    </span>
+                    <button onclick="clearTerminal()" class="text-xs text-slate-400 hover:text-white transition-colors">Clear</button>
+                </div>
+                <div id="terminalOutput" class="p-4 bg-slate-950/80 font-code text-xs text-emerald-400 h-36 overflow-y-auto space-y-1">
+                    <div>[System] Connie Coder Environment initialized successfully.</div>
+                    <div>[Ready] Weather controller online. Select a mode above.</div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="relative z-10 text-center py-4 text-xs text-slate-400 border-t border-white/10 mt-auto">
+        Connie Coder's Weather Academy &bull; Built with HTML, Tailwind CSS & JavaScript
+    </footer>
+
+    <!-- JavaScript Logic & Particle Physics Engine -->
+    <script>
+        // Clock updater
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('currentTime').innerText = now.toLocaleTimeString();
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // Weather configurations
+        const weatherConfigs = {
+            sunny: {
+                class: 'theme-sunny',
+                temp: '26°C',
+                humidity: '35%',
+                wind: '8 km/h',
+                load: '14%',
+                code: `// Connie Coder Weather Script: Sunny Mode\nconst climate = {\n  mode: "sunny",\n  solarPanels: "Active (100%)",\n  action: () => alert("Enjoy the sunny coding session!")\n};`
+            },
+            cloudy: {
+                class: 'theme-cloudy',
+                temp: '20°C',
+                humidity: '60%',
+                wind: '14 km/h',
+                load: '22%',
+                code: `// Connie Coder Weather Script: Cloudy Mode\nconst climate = {\n  mode: "cloudy",\n  diffusedLight: true,\n  action: () => console.log("Optimizing battery reserves...")\n};`
+            },
+            rainy: {
+                class: 'theme-rainy',
+                temp: '16°C',
+                humidity: '88%',
+                wind: '18 km/h',
+                load: '35%',
+                code: `// Connie Coder Weather Script: Rainy Mode\nconst climate = {\n  mode: "rainy",\n  precipitation: "Moderate",\n  action: () => console.log("Indoor robotics & Python debugging session.")\n};`
+            },
+            stormy: {
+                class: 'theme-stormy',
+                temp: '14°C',
+                humidity: '95%',
+                wind: '42 km/h',
+                load: '64%',
+                code: `// Connie Coder Weather Script: Stormy Mode\nconst climate = {\n  mode: "stormy",\n  lightningDetected: true,\n  action: () => console.warn("Surge protection engaged!")\n};`
+            },
+            snowy: {
+                class: 'theme-snowy',
+                temp: '-2°C',
+                humidity: '70%',
+                wind: '10 km/h',
+                load: '40%',
+                code: `// Connie Coder Weather Script: Snowy Mode\nconst climate = {\n  mode: "snowy",\n  thermalRegulator: "Active",\n  action: () => console.log("Warming up the coding lab heater.")\n};`
+            }
+        };
+
+        let currentMode = 'sunny';
+
+        function setWeather(mode) {
+            currentMode = mode;
+            const cfg = weatherConfigs[mode];
+
+            // Update body theme
+            const body = document.getElementById('appBody');
+            body.className = `${cfg.class} min-h-screen text-white relative overflow-x-hidden flex flex-col transition-all duration-700`;
+
+            // Update stats
+            document.getElementById('statTemp').innerText = cfg.temp;
+            document.getElementById('statHumidity').innerText = cfg.humidity;
+            document.getElementById('statWind').innerText = cfg.wind;
+            document.getElementById('statSystemLoad').innerText = cfg.load;
+
+            // Update Code Snippet
+            document.getElementById('codeSnippet').innerText = cfg.code;
+
+            // Log to terminal
+            logTerminal(`[Climate Change] Switched active environment to: ${mode.toUpperCase()}`);
+
+            // Active button highlight
+            document.querySelectorAll('.weather-btn').forEach(btn => {
+                if(btn.dataset.weather === mode) {
+                    btn.classList.add('ring-2', 'ring-white');
+                } else {
+                    btn.classList.remove('ring-2', 'ring-white');
+                }
+            });
+        }
+
+        function logTerminal(message) {
+            const term = document.getElementById('terminalOutput');
+            const div = document.createElement('div');
+            div.innerText = message;
+            term.appendChild(div);
+            term.scrollTop = term.scrollHeight;
+        }
+
+        function clearTerminal() {
+            document.getElementById('terminalOutput').innerHTML = '<div class="text-slate-500">[Terminal cleared]</div>';
+        }
+
+        // Particle Canvas Simulation
+        const canvas = document.getElementById('weatherCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        let particles = [];
+        const maxParticles = 150;
+
+        function initParticles() {
+            particles = [];
+            for (let i = 0; i < maxParticles; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    speedY: Math.random() * 3 + 1,
+                    speedX: (Math.random() - 0.5) * 2,
+                    radius: Math.random() * 2 + 1,
+                    alpha: Math.random() * 0.7 + 0.3
+                });
+            }
+        }
+        initParticles();
+
+        function animateParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (currentMode === 'rainy' || currentMode === 'stormy') {
+                ctx.strokeStyle = 'rgba(147, 197, 253, 0.6)';
+                ctx.lineWidth = currentMode === 'stormy' ? 2 : 1;
+                particles.forEach(p => {
+                    ctx.beginPath();
+                    ctx.moveTo(p.x, p.y);
+                    ctx.lineTo(p.x - 2, p.y + (currentMode === 'stormy' ? 25 : 15));
+                    ctx.stroke();
+
+                    p.y += currentMode === 'stormy' ? 20 : 10;
+                    if (p.y > canvas.height) {
+                        p.y = -20;
+                        p.x = Math.random() * canvas.width;
+                    }
+                });
+            } else if (currentMode === 'snowy') {
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                particles.forEach(p => {
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.radius + 1, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    p.y += 1.5;
+                    p.x += Math.sin(p.y * 0.02);
+                    if (p.y > canvas.height) {
+                        p.y = -10;
+                        p.x = Math.random() * canvas.width;
+                    }
+                });
+            } else if (currentMode === 'sunny') {
+                ctx.fillStyle = 'rgba(253, 224, 71, 0.25)';
+                particles.forEach(p => {
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.radius * 2, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    p.y -= 0.5;
+                    if (p.y < 0) p.y = canvas.height;
+                });
+            }
+
+            requestAnimationFrame(animateParticles);
+        }
+        animateParticles();
+    </script>
+</body>
+</html>
